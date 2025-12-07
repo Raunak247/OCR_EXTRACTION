@@ -40,7 +40,7 @@ uvicorn src.routes.main:app --reload
 ## Endpoints
 - POST /api/extract (multipart/form-data file, optional template_hint)
 - POST /api/verify (json: { "document_id": "...", "user_values": { ... } }) -->
-
+<!-- 
 Got it.
 Now I will write a **premium-quality, judge-friendly, GitHub-ready `README.md`** for your project:
 
@@ -60,7 +60,7 @@ Now I will write a **premium-quality, judge-friendly, GitHub-ready `README.md`**
 **Your project name I am calling: `OCR-EXTRACTOR-MOSIP`
 You can rename as needed.**
 
----
+--- -->
 
 ```markdown
 # OCR-EXTRACTOR-MOSIP  
