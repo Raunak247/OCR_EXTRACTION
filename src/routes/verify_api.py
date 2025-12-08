@@ -1,22 +1,20 @@
-# src/routes/verify_api.py
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any
-from src.services.verify_service import VerifyService
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from src.services.extract_service import ExtractService
 
-router = APIRouter()
-
-class VerifyRequest(BaseModel):
-    document_id: str
-    user_values: Dict[str, Any]
+router = APIRouter(tags=["Verification"])
+service = ExtractService()
 
 @router.post("/verify")
-def verify(req: VerifyRequest):
-    svc = VerifyService()
-    try:
-        report = svc.verify(req.document_id, req.user_values)
-        return report
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Document not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def verify_document(file: UploadFile = File(...)):
+    """
+    Verify user uploaded document by extracting fields.
+    """
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    result = await service.process_document(file)
+    return {
+        "status": "success",
+        "message": "Document verified",
+        "extracted_fields": result
+    }

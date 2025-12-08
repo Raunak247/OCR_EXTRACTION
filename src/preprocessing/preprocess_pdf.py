@@ -1,21 +1,23 @@
-# src/preprocessing/preprocess_pdf.py
-import pymupdf as fitz
-  # PyMuPDF
-import cv2
-import numpy as np
-from pathlib import Path
+import fitz
+import os
 
-def process_pdf(pdf_path: str, doc_id: str):
+OUTPUT_DIR = "processed"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+def process_pdf(pdf_path):
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(f"PDF not found: {pdf_path}")
+
     doc = fitz.open(pdf_path)
-    pages = []
-    out_dir = Path("files") / doc_id / "processed"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    for i, page in enumerate(doc):
-        pix = page.get_pixmap(dpi=300)
-        img_bytes = pix.tobytes()
-        arr = np.frombuffer(img_bytes, dtype=np.uint8)
-        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        save_path = out_dir / f"page_{i+1}.png"
-        cv2.imwrite(str(save_path), img)
-        pages.append(img)
-    return pages
+    text_output = ""
+
+    for page in doc:
+        text_output += page.get_text()
+
+    doc.close()
+
+    output_path = os.path.join(OUTPUT_DIR, os.path.basename(pdf_path) + ".txt")
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(text_output)
+
+    return output_path
