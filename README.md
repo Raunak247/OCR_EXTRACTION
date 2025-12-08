@@ -240,8 +240,8 @@ Output:
 
 ### 1. Clone the repository
 ```sh
-git clone https://github.com/yourusername/ocr-extractor-mosip.git
-cd ocr-extractor-mosip
+git clone https://github.com/Raunak247/OCR_EXTRACTION.git
+cd ocr_extraction
 ````
 
 ### 2. Create environment
@@ -437,7 +437,7 @@ This project is licensed under **MIT License**.
 # 📬 Contact
 
 For queries & support:
-**[yourname@example.com](mailto:yourname@example.com)**
+**[pantawaneraunak@gmail.om](pantawaneraunak@gmail.com)**
 
 ---
 
