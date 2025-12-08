@@ -1,71 +1,43 @@
 # src/services/extract_service.py
 import uuid
-import json
-from pathlib import Path
-
-from src.utils.file_manager import create_doc_folders, save_raw_file
-from src.preprocessing.preprocess_pdf import process_pdf
+import os
+from fastapi import UploadFile
+from src.utilis.file_manager import save_raw_file
 from src.preprocessing.preprocess_image import process_image
-from src.templates.template_loader import detect_template, load_template
-from src.ocr.ocr_engine import run_ocr_on_image_path
-from src.quality.quality_index import compute_quality_score
+from src.preprocessing.preprocess_pdf import process_pdf
+from src.ocr.ocr_engine import OCREngine
+from src.templates.template_loader import TemplateLoader
 
 class ExtractService:
-    async def process_document(self, upload_file, template_hint=None):
-        doc_id = uuid.uuid4().hex[:8]
-        base = create_doc_folders(doc_id)
 
-        raw_path = await save_raw_file(doc_id, upload_file)
+    async def process_document(self, file: UploadFile):
+        doc_id = str(uuid.uuid4())
 
-        pages = []
-        if raw_path.lower().endswith(".pdf"):
-            pages = process_pdf(raw_path, doc_id)
+        # 1. Save raw file
+        file_path = save_raw_file(doc_id, file)
+
+        # 2. Detect type
+        file_ext = file.filename.split(".")[-1].lower()
+
+        if file_ext in ["jpg", "jpeg", "png"]:
+            processed_path = process_image(doc_id, file_path)
+        elif file_ext == "pdf":
+            processed_path = process_pdf(doc_id, file_path)
         else:
-            img = process_image(raw_path, doc_id)
-            pages = [img]
+            return {"error": "Unsupported file format"}
 
-        template_name = template_hint or detect_template(pages[0])
-        template = load_template(template_name)
+        # 3. OCR
+        ocr = OCREngine()
+        raw_text, boxes = ocr.run_ocr(processed_path)
 
-        fields_out = {}
-        crops_dir = Path(base) / "crops"
-        crops_dir.mkdir(parents=True, exist_ok=True)
+        # 4. Template matching
+        template_service = TemplateLoader()
+        fields = template_service.extract_fields(doc_id, boxes, processed_path)
 
-        for field_name, cfg in template.items():
-            page_idx = max(0, cfg.get("page", 1) - 1)
-            if page_idx >= len(pages):
-                fields_out[field_name] = {"text": None, "confidence": 0.0, "note": "page_missing"}
-                continue
-
-            x1, y1, x2, y2 = cfg["box"]
-            page_img = pages[page_idx]
-            h, w = page_img.shape[:2]
-            x1c, y1c = max(0, x1), max(0, y1)
-            x2c, y2c = min(w, x2), min(h, y2)
-            if x1c >= x2c or y1c >= y2c:
-                fields_out[field_name] = {"text": None, "confidence": 0.0, "note": "invalid_box"}
-                continue
-            crop = page_img[y1c:y2c, x1c:x2c]
-
-            crop_path = str(crops_dir / f"{field_name}.png")
-            import cv2
-            cv2.imwrite(crop_path, crop)
-
-            ocr_res = run_ocr_on_image_path(crop_path)
-            fields_out[field_name] = ocr_res
-
-        quality = compute_quality_score(pages[0])
-
-        result = {
-            "document_id": doc_id,
-            "template": template_name,
-            "pages": len(pages),
-            "quality": quality,
-            "fields": fields_out
+        # 5. Response
+        return {
+            "doc_id": doc_id,
+            "raw_text": raw_text,
+            "fields": fields,
+            "status": "success"
         }
-
-        Path(base, "ocr").mkdir(parents=True, exist_ok=True)
-        with open(Path(base) / "ocr" / "result.json", "w", encoding="utf8") as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
-
-        return result

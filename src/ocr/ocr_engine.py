@@ -1,10 +1,41 @@
-# src/ocr/ocr_engine.py
-from src.ocr.tryocr_runner import run_tryocr
-from src.ocr.tesseract_runner import run_tesseract
+import pytesseract
+from PIL import Image
+import cv2
+import numpy as np
 
-def run_ocr_on_image_path(image_path: str):
-    # First try optional tryocr (if implemented), fallback to tesseract
-    res = run_tryocr(image_path)
-    if not res or res.get("confidence", 0.0) < 0.4:
-        res = run_tesseract(image_path)
-    return res
+
+class OCREngine:
+
+    def run_ocr(self, image_path):
+
+        # Load image
+        img = cv2.imread(image_path)
+
+        if img is None:
+            return "", []
+
+        # Convert to RGB
+        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # Run OCR with bounding boxes
+        data = pytesseract.image_to_data(
+            rgb,
+            output_type=pytesseract.Output.DICT
+        )
+
+        extracted_text = " ".join(data["text"])
+
+        # Extract bounding boxes
+        boxes = []
+        for i in range(len(data["text"])):
+            if data["text"][i].strip() != "":
+                box = {
+                    "text": data["text"][i],
+                    "x": data["left"][i],
+                    "y": data["top"][i],
+                    "w": data["width"][i],
+                    "h": data["height"][i],
+                }
+                boxes.append(box)
+
+        return extracted_text, boxes

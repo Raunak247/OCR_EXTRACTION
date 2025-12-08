@@ -1,5 +1,6 @@
 # src/preprocessing/preprocess_pdf.py
-import fitz  # PyMuPDF
+import pymupdf as fitz
+  # PyMuPDF
 import cv2
 import numpy as np
 from pathlib import Path

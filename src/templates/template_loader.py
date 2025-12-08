@@ -1,16 +1,18 @@
-# src/templates/template_loader.py
 import json
-from pathlib import Path
+import os
 
-TEMPLATE_DIR = Path("src") / "templates"
 
-def load_template(name: str):
-    p = TEMPLATE_DIR / f"{name}.json"
-    if not p.exists():
-        raise FileNotFoundError("Template not found: " + name)
-    return json.loads(p.read_text(encoding="utf8"))
+class TemplateLoader:
 
-def detect_template(image):
-    # Basic heuristic: image shape or visual anchor detection can be added.
-    # For now default to id_card
-    return "id_card"
+    def __init__(self, template_dir="src/templates"):
+        self.template_dir = template_dir
+
+    def load_template(self, template_name):
+        path = os.path.join(self.template_dir, template_name)
+
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Template not found: {path}")
+
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
