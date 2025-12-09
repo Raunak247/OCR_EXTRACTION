@@ -1,9 +1,21 @@
 from fastapi import APIRouter, UploadFile, File
-from src.services.extract_service import ExtractService
+from PIL import Image
+import pytesseract
+import io
 
-router = APIRouter(prefix="/api", tags=["Extraction"])
-service = ExtractService()
+router = APIRouter()
 
 @router.post("/extract")
-async def extract_document(file: UploadFile = File(...)):
-    return await service.process_document(file)
+async def extract_text(file: UploadFile = File(...)):
+    try:
+        # Read image
+        image_data = await file.read()
+        image = Image.open(io.BytesIO(image_data))
+
+        # OCR
+        text = pytesseract.image_to_string(image)
+
+        return {"status": "success", "text": text}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

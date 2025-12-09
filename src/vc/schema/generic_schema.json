@@ -1,0 +1,12 @@
+{
+  "title": "Generic VC Schema",
+  "type": "object",
+  "properties": {
+    "credentialSubject": {
+      "type": "object"
+    },
+    "issuer": {"type": "string"},
+    "issuanceDate": {"type": "string"}
+  },
+  "required": ["credentialSubject", "issuer", "issuanceDate"]
+}

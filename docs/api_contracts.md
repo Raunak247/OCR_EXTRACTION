@@ -81,7 +81,7 @@ routes/
 - extract_api.py → Extraction endpoint  
 - verify_api.py → Verification endpoint  
 - health_api.py → Health status  
-
+# http://127.0.0.1:8000/docs
 ---
 
 ## 6. Data Flow Diagram (Simplified)

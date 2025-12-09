@@ -11,3 +11,10 @@ pillow
 fitz
 pytesseract
 pymupdf
+qrcode
+requests
+python-multipart
+jinja2
+python-dotenv
+email-validator
+bcrypt

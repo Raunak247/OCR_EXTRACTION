@@ -1,6 +1,7 @@
 # src/utils/file_manager.py
 from pathlib import Path
 import aiofiles
+import os
 
 def create_doc_folders(doc_id: str) -> str:
     base = Path("files") / doc_id
@@ -18,3 +19,7 @@ async def save_raw_file(doc_id: str, upload_file) -> str:
     async with aiofiles.open(path, "wb") as f:
         await f.write(data)
     return str(path)
+def ensure_doc_folder(path: str):
+    os.makedirs(path, exist_ok=True)
+    return path
+
