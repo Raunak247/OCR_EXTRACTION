@@ -1,7 +1,22 @@
-venv/
+# Python
 __pycache__/
-files/
-logs/
-.env
 *.pyc
-.DS_Store
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+ENV/
+.venv/
+ocr_env/
+ocr_venv/
+
+# VS Code
+.vscode/
+
+# Logs & uploads
+logs/
+uploads/
+
+# Local env vars
+.env
