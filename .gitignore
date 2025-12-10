@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.vscode/
+.env
+venv/
+ocr_env/
+uploads/
+files/
+processed/
+logs/
+*.db
