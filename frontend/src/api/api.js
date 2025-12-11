@@ -1,40 +1,43 @@
-import axios from "axios";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
+const BASE = "http://localhost:8000/api";
 
-const API = axios.create({
-  baseURL: "http://localhost:8000"
-});
-
-// Upload File
 export const uploadDocument = async (file) => {
-  const form = new FormData();
-  form.append("file", file);
+    const form = new FormData();
+    form.append("file", file);
+    return axios.post(`${BASE}/extract`, form);
+};
 
-  const res = await API.post("/extract", form, {
-    headers: { "Content-Type": "multipart/form-data" }
+export const verifyFields = async (payload) =>
+    axios.post(`${BASE}/verify`, payload);
+
+export const issueVC = async (payload) =>
+    axios.post(`${BASE}/vc/issue`, payload);
+
+export async function uploadFile(file, templateHint=null){
+  const fd = new FormData();
+  fd.append("file", file);
+  if(templateHint) fd.append("template_hint", templateHint);
+  const res = await fetch(`${API_BASE}/extract`, {
+    method: "POST",
+    body: fd
   });
+  return res.json();
+}
 
-  return res.data;
-};
-
-// Live field verification
-export const liveCheck = async (document_id, field_name, user_value) => {
-  const res = await API.post("/verify/live", {
-    document_id,
-    field_name,
-    user_value
+export async function verifyDocument(document_id, user_values){
+  const res = await fetch(`${API_BASE}/verify`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({document_id, user_values})
   });
+  return res.json();
+}
 
-  return res.data;
-};
-
-// Full verification
-export const verifyAll = async (payload) => {
-  const res = await API.post("/verify", payload);
-  return res.data;
-};
-
-// VC Issue
-export const issueVC = async (payload) => {
-  const res = await API.post("/vc/issue", payload);
-  return res.data;
-};
+export async function issueVC(payload){
+  const res = await fetch(`${API_BASE}/vc/issue`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}

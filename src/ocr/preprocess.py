@@ -2,14 +2,14 @@
 import os
 import shutil
 from typing import List
-from src.utils.image_tools import read_image, to_grayscale, denoise, threshold, save_image
-from src.utils.pdf_tools import pdf_to_images
-from src.utils.logger import logger
+from src.utilis.image_tools import read_image, to_grayscale, denoise, threshold, save_image
+from src.utilis.pdf_tools import pdf_to_images
+from src.utilis.loggers import logger
 
-def preprocess_file(input_path: str, output_dir: str) -> List[str]:
-    """
-    Accepts PDF or image path. Outputs list of processed image paths (png).
-    """
+def preprocess_file(path: str, output_dir: str):
+    
+    # return list of processed images
+
     os.makedirs(output_dir, exist_ok=True)
     ext = os.path.splitext(input_path)[1].lower()
     images = []

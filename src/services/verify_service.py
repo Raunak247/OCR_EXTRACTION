@@ -1,55 +1,81 @@
-# src/services/verify_service.py
 import json
 from pathlib import Path
-from src.verification.normalizer import normalize_value
-from src.verification.similarity import compute_similarity
-from src.verification.report_generator import create_report
+from src.verification.compare_fields import compare
+from src.verification.accuracy_score import compute_overall_score
+from src.mosip.vc_issuer import VCIssuer
+from src.utilis.file_manager import ensure_doc_folder
+from src.utilis.common import ts
+
+FILES_BASE = Path("files")
 
 class VerifyService:
-    def verify(self, document_id: str, user_values: dict):
-        result_path = Path("files") / document_id / "ocr" / "result.json"
+    def __init__(self, vc_auto_issue_threshold: int = 85):
+        self.vc_issuer = VCIssuer()
+        self.vc_auto_issue_threshold = vc_auto_issue_threshold
+
+    def verify(self, document_id: str, user_values: dict) -> dict:
+        """
+        document_id: id returned by extract endpoint
+        user_values: dict of user-submitted fields (strings)
+        """
+        result_path = FILES_BASE / document_id / "ocr" / "result.json"
         if not result_path.exists():
-            raise FileNotFoundError("No OCR result for document")
+            raise FileNotFoundError(f"No OCR result for document {document_id}")
 
         with open(result_path, "r", encoding="utf8") as f:
             extracted = json.load(f)
 
-        field_results = {}
         extracted_fields = extracted.get("fields", {})
 
+        per_field = {}
         for key, user_val in user_values.items():
-            ocr_entry = extracted_fields.get(key)
-            if not ocr_entry:
-                field_results[key] = {
-                    "match": False,
+            extracted_val = extracted_fields.get(key)
+            if extracted_val is None:
+                # field not extracted
+                per_field[key] = {
+                    "extracted": None,
+                    "submitted": user_val,
                     "similarity": 0.0,
+                    "match": False,
                     "reason": "field_not_extracted"
                 }
                 continue
 
-            ocr_text = ocr_entry.get("text") or ""
-            norm_ocr = normalize_value(ocr_text)
-            norm_user = normalize_value(str(user_val))
+            cmp = compare(extracted_val, user_val)
+            per_field[key] = cmp
 
-            sim = compute_similarity(norm_ocr, norm_user)
+        overall = compute_overall_score(per_field)
 
-            match = sim >= 0.75
-            reason = "exact_match" if match else "similarity_below_threshold"
+        report = {
+            "document_id": document_id,
+            "timestamp": ts(),
+            "overall_score": overall,
+            "fields": per_field
+        }
 
-            field_results[key] = {
-                "extracted": ocr_text,
-                "submitted": user_val,
-                "normalized_extracted": norm_ocr,
-                "normalized_submitted": norm_user,
-                "similarity": round(sim, 3),
-                "match": match,
-                "reason": reason
+        # Save verification report
+        ver_dir = FILES_BASE / document_id / "verification"
+        ver_dir.mkdir(parents=True, exist_ok=True)
+        with open(ver_dir / "verification.json", "w", encoding="utf8") as f:
+            json.dump(report, f, indent=2, ensure_ascii=False)
+
+        # If good enough automatically issue VC and save in report folder
+        if overall >= self.vc_auto_issue_threshold:
+            subject = {
+                "name": user_values.get("name", extracted_fields.get("name")),
+                "dob": user_values.get("dob", extracted_fields.get("dob")),
+                "address": user_values.get("address", extracted_fields.get("address")),
+                "docType": extracted.get("template", "unknown"),
+                "docNumber": user_values.get("id_number", extracted_fields.get("id_number")),
+                "score": overall
             }
+            vc_res = self.vc_issuer.issue_vc(subject)
+            report["vc"] = vc_res
 
-        final = create_report(document_id, field_results)
-        report_dir = Path("files") / document_id / "report"
-        report_dir.mkdir(parents=True, exist_ok=True)
-        with open(report_dir / "verification.json", "w", encoding="utf8") as f:
-            json.dump(final, f, indent=2, ensure_ascii=False)
+            # save VC into report folder
+            report_dir = FILES_BASE / document_id / "report"
+            report_dir.mkdir(parents=True, exist_ok=True)
+            with open(report_dir / f"{vc_res['vc_id']}.json", "w", encoding="utf8") as f:
+                json.dump(vc_res, f, indent=2, ensure_ascii=False)
 
-        return final
+        return report

@@ -1,9 +1,16 @@
 # src/verification/accuracy_score.py
-from rapidfuzz import fuzz
-
-def fuzzy_score(a: str, b: str) -> float:
-    if not a and not b:
-        return 100.0
-    if not a or not b:
+def compute_overall_score(per_field_results: dict) -> float:
+    """
+    Aggregate per-field similarity into overall percentage (0-100).
+    Simple weighted average: all fields equal weight.
+    """
+    if not per_field_results:
         return 0.0
-    return round(fuzz.token_set_ratio(a, b), 2)
+    scores = []
+    for v in per_field_results.values():
+        try:
+            scores.append(float(v.get("similarity", 0.0)))
+        except Exception:
+            scores.append(0.0)
+    overall = sum(scores) / len(scores)
+    return round(overall, 2)

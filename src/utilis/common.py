@@ -2,6 +2,10 @@
 
 import time
 import os
+from datetime import datetime
+
+def now_iso():
+    return datetime.utcnow().isoformat() + "Z"
 
 def ts() -> str:
     """Returns timestamp string"""
@@ -16,7 +20,4 @@ def safe_filename(name: str) -> str:
     """Removes bad characters from filenames"""
     return "".join(c for c in name if c.isalnum() or c in "._-").rstrip()
 
-def now_iso() -> str:
-    """Return current timestamp in ISO-8601 format"""
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 

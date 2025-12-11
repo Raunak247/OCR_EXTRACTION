@@ -1,7 +1,7 @@
 # src/ocr/extractor.py
 import os
 from typing import List, Dict
-from src.utils.logger import logger
+from src.utilis.loggers import logger
 
 # Try to import trOCR
 HAS_TROCR = False
