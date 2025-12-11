@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from src.mosip.vc_issuer import build_vc
-from src.utils.file_manager import ensure_doc_folder
+from src.utilis.file_manager import ensure_doc_folder
 import os
 
 router = APIRouter()

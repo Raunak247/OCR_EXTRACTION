@@ -2,7 +2,7 @@
 import os
 from PIL import Image
 import pytesseract
-from src.utils.logger import get_logger
+from src.utilis.loggers import get_logger
 
 logger = get_logger("ocr_engine")
 

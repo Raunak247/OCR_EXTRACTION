@@ -1,8 +1,8 @@
 # src/mosip/vc_issuer.py
 import json
 from src.mosip.sign import sign_payload
-from src.mosip.qr_generate import generate_qr
-from src.utils.common import now_iso
+from src.mosip.qr_generator import generate_qr
+from src.utilis.common import now_iso
 import os
 
 def build_vc(subject: dict, verification_report: dict, doc_id: str, out_dir: str):

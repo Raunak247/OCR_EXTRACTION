@@ -1,58 +1,91 @@
 # src/extraction/field_extractor.py
 import re
-from typing import Dict
+from typing import Dict, Optional
+
 from src.extraction.sanitizer import uppercase_and_strip
-from src.extraction import aadhaar_rules, pan_rules, voterid_rules
 
-def extract_fields_from_text(text: str) -> Dict:
+# Aadhaar spelling fix
+try:
+    from src.extraction import aadhaar_rules
+except:
+    from src.extraction import adhaar_rules as aadhaar_rules
+
+from src.extraction import pan_rules, voterid_rules
+
+
+class FieldExtractor:
     """
-    Basic pipeline: detect patterns and return candidate values
+    Final version: usable by ExtractService
     """
-    result = {
-        "name": None,
-        "dob": None,
-        "address": None,
-        "id_number": None,
-        "document_type": "unknown"
-    }
-    txt = uppercase_and_strip(text)
 
-    # Aadhaar detection
-    aad = aadhaar_rules.find_aadhaar(txt)
-    if aad:
-        result["id_number"] = aad
-        result["document_type"] = "aadhaar"
+    def extract(self, text: str) -> Dict[str, Optional[str]]:
+        result = {
+            "name": None,
+            "dob": None,
+            "address": None,
+            "id_number": None,
+            "document_type": "unknown"
+        }
 
-    # PAN detection
-    pan = pan_rules.find_pan(txt)
-    if pan:
-        result["id_number"] = pan
-        result["document_type"] = "pan"
+        if not text:
+            return result
 
-    # VoterID detection
-    vid = voterid_rules.find_voterid(txt)
-    if vid:
-        result["id_number"] = vid
-        result["document_type"] = "voterid"
+        txt = uppercase_and_strip(text)
 
-    # name heuristic: lines with uppercase words and length
-    lines = [l.strip() for l in txt.splitlines() if l.strip()]
-    if lines:
-        # pick first long-ish line as name heuristic
-        for ln in lines[:6]:
-            if 3 <= len(ln.split()) <= 6 and any(c.isalpha() for c in ln):
+        # ---------------- Aadhaar ----------------
+        aadhar = None
+        try:
+            aadhar = aadhaar_rules.find_aadhaar(txt)
+        except:
+            pass
+
+        if aadhar:
+            result["document_type"] = "aadhaar"
+            result["id_number"] = aadhar
+
+        # ---------------- PAN ----------------
+        pan = None
+        try:
+            pan = pan_rules.find_pan(txt)
+        except:
+            pass
+
+        if pan:
+            result["document_type"] = "pan"
+            result["id_number"] = pan
+
+        # ---------------- Voter ID ----------------
+        voter = None
+        try:
+            voter = voterid_rules.find_voterid(txt)
+        except:
+            pass
+
+        if voter:
+            result["document_type"] = "voterid"
+            result["id_number"] = voter
+
+        # ---------------- Name ----------------
+        lines = [l.strip() for l in txt.splitlines() if l.strip()]
+        for ln in lines[:10]:
+            if 2 <= len(ln.split()) <= 6:
                 result["name"] = ln
                 break
 
-    # DOB regex
-    m = re.search(r"(\d{2}[-/]\d{2}[-/]\d{4})", txt)
-    if m:
-        result["dob"] = m.group(1)
+        # ---------------- DOB ----------------
+        dob = re.search(r"\d{2}[-/]\d{2}[-/]\d{4}", txt)
+        if dob:
+            result["dob"] = dob.group(0)
 
-    # address fallback: long line
-    for ln in reversed(lines):
-        if len(ln) > 30:
-            result["address"] = ln
-            break
+        # ---------------- Address ----------------
+        for ln in reversed(lines):
+            if len(ln) > 40:
+                result["address"] = ln
+                break
 
-    return result
+        return result
+
+
+# backward compatibility
+def extract_fields_from_text(text: str):
+    return FieldExtractor().extract(text)

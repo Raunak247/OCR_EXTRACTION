@@ -1,9 +1,22 @@
-# src/utils/common.py
-import uuid
-import datetime
+# src/utilis/common.py
 
-def new_doc_id(prefix="DOC"):
-    return f"{prefix}_{uuid.uuid4().hex[:12]}"
+import time
+import os
 
-def now_iso():
-    return datetime.datetime.utcnow().isoformat() + "Z"
+def ts() -> str:
+    """Returns timestamp string"""
+    return str(int(time.time()))
+
+def ensure_dir(path: str):
+    """Safe directory creation"""
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+def safe_filename(name: str) -> str:
+    """Removes bad characters from filenames"""
+    return "".join(c for c in name if c.isalnum() or c in "._-").rstrip()
+
+def now_iso() -> str:
+    """Return current timestamp in ISO-8601 format"""
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+

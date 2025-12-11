@@ -9,3 +9,4 @@ files/
 processed/
 logs/
 *.db
+node_modules/
